@@ -78,10 +78,9 @@ export async function init(container) {
   // Eventos
   document.getElementById('btn-atualizar').addEventListener('click', carregarLeitos)
   document.getElementById('btn-internar').addEventListener('click', () => {
-    // Pega primeiro leito disponível ou abre seleção
-    const disponivel = todosLeitos.find(l => l.status === 'disponivel')
-    if (!disponivel) { alert('Nenhum leito disponível no momento.'); return }
-    router.navigate('internar', { leito_id: disponivel.id })
+    const disponiveis = todosLeitos.filter(l => l.status === 'disponivel')
+    if (!disponiveis.length) { alert('Nenhum leito disponível no momento.'); return }
+    abrirModalSelecionarLeito(disponiveis)
   })
   document.getElementById('busca-leito').addEventListener('input', e => {
     buscaAtiva = e.target.value.toLowerCase().trim()
@@ -248,6 +247,61 @@ function renderCard(l) {
       ${actions}
     </div>
   `
+}
+
+function abrirModalSelecionarLeito(disponiveis) {
+  // Remove modal anterior se existir
+  document.getElementById('modal-sel-leito')?.remove()
+
+  // Agrupa por setor
+  const setores = {}
+  disponiveis.forEach(l => {
+    if (!setores[l.setor]) setores[l.setor] = []
+    setores[l.setor].push(l)
+  })
+
+  const setoresHTML = Object.entries(setores).map(([setor, leitos]) => `
+    <div class="mb-3">
+      <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5 px-1">${setor}</div>
+      <div class="grid grid-cols-4 gap-1.5">
+        ${leitos.map(l => `
+          <button class="btn-sel-leito border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 rounded-lg py-2 px-2 text-[12px] font-semibold transition-colors" data-leito-id="${l.id}" data-leito-codigo="${l.codigo}">
+            ${l.codigo}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('')
+
+  const modal = document.createElement('div')
+  modal.id = 'modal-sel-leito'
+  modal.className = 'fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4'
+  modal.innerHTML = `
+    <div class="bg-white rounded-xl w-full max-w-md shadow-xl">
+      <div class="flex items-center justify-between p-4 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+          <i class="ti ti-bed text-primary-500"></i> Selecionar Leito
+        </h3>
+        <button id="modal-leito-fechar" class="text-gray-400 hover:text-gray-600"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="p-4 max-h-80 overflow-y-auto">
+        <p class="text-xs text-gray-400 mb-3">${disponiveis.length} leito(s) disponível(is). Selecione onde deseja internar o paciente.</p>
+        ${setoresHTML}
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  document.getElementById('modal-leito-fechar').addEventListener('click', () => modal.remove())
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+
+  modal.querySelectorAll('.btn-sel-leito').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.remove()
+      router.navigate('internar', { leito_id: btn.dataset.leitoId })
+    })
+  })
 }
 
 function injetarEstilosFiltro() {
