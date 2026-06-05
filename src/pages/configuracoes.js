@@ -20,12 +20,12 @@ export async function init(container) {
             <div class="text-xs text-gray-500">Altere o status dos leitos: limpeza, manutenção, disponível</div>
           </div>
 
-          <div class="card opacity-50 cursor-not-allowed">
-            <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 mb-3">
+          <div class="card hover:border-primary-500 hover:shadow-sm transition-all cursor-pointer" id="btn-usuarios">
+            <div class="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center text-primary-500 mb-3">
               <i class="ti ti-users text-xl"></i>
             </div>
-            <div class="font-semibold text-gray-700 mb-1">Usuários</div>
-            <div class="text-xs text-gray-400">Gerenciar médicos e acessos — disponível em breve</div>
+            <div class="font-semibold text-gray-800 mb-1">Usuários</div>
+            <div class="text-xs text-gray-500">Gerenciar usuários e acessos do sistema</div>
           </div>
 
           <div class="card opacity-50 cursor-not-allowed">
@@ -43,5 +43,8 @@ export async function init(container) {
 
   document.getElementById('btn-gerenciar-leitos').addEventListener('click', () => {
     router.navigate('gerenciar-leitos')
+  })
+  document.getElementById('btn-usuarios').addEventListener('click', () => {
+    router.navigate('usuarios')
   })
 }

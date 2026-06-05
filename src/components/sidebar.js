@@ -1,6 +1,14 @@
 // src/components/sidebar.js
+import { signOut } from '../services/auth.js'
 
 export function renderSidebar(paginaAtiva = 'leitos') {
+  const usuario = JSON.parse(sessionStorage.getItem('sigmapep_usuario') || 'null')
+  const nome = usuario?.nome || 'Usuário'
+  const perfil = usuario?.perfil || ''
+  const crm = usuario?.crm || ''
+  const iniciais = nome.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()
+  const subinfo = crm ? `CRM/PR ${crm} · ${perfil}` : perfil
+
   const itens = [
     { id: 'leitos',     icon: 'ti-layout-grid',    label: 'Painel de Leitos' },
     { id: 'pacientes',  icon: 'ti-users',           label: 'Pacientes' },
@@ -10,7 +18,7 @@ export function renderSidebar(paginaAtiva = 'leitos') {
     { id: 'lista-alta', icon: 'ti-door-exit',       label: 'Alta Hospitalar' },
     { id: 'relatorios', icon: 'ti-chart-bar',       label: 'Relatórios'   },
     { id: 'usuarios',   icon: 'ti-user-circle',     label: 'Usuários' },
-    { id: 'config',      icon: 'ti-settings',        label: 'Configurações' },
+    { id: 'config',     icon: 'ti-settings',        label: 'Configurações' },
   ]
 
   return `
@@ -36,11 +44,11 @@ export function renderSidebar(paginaAtiva = 'leitos') {
       <!-- User -->
       <div class="px-3 py-3 border-t border-white/10 flex items-center gap-2">
         <div class="w-[30px] h-[30px] rounded-full bg-white/20 flex items-center justify-center text-white text-[11px] font-semibold flex-shrink-0">
-          JS
+          ${iniciais}
         </div>
         <div class="min-w-0">
-          <div class="text-white text-[11.5px] font-medium truncate">Dr. João Silva</div>
-          <div class="text-white/50 text-[10px] truncate">CRM/PR 12345 · Médico</div>
+          <div class="text-white text-[11.5px] font-medium truncate">${nome}</div>
+          <div class="text-white/50 text-[10px] truncate">${subinfo}</div>
         </div>
       </div>
       <div class="px-3.5 pb-3">
@@ -52,7 +60,6 @@ export function renderSidebar(paginaAtiva = 'leitos') {
   `
 }
 
-// Vincula navegação ao router
 export function bindSidebarNav(router) {
   document.querySelectorAll('[data-page]').forEach(el => {
     el.addEventListener('click', () => {
@@ -61,7 +68,9 @@ export function bindSidebarNav(router) {
     })
   })
 
-  document.getElementById('btn-sair')?.addEventListener('click', () => {
+  document.getElementById('btn-sair')?.addEventListener('click', async () => {
+    await signOut()
+    sessionStorage.removeItem('sigmapep_usuario')
     router.navigate('login')
   })
 }
@@ -70,3 +79,4 @@ export function setNavAtivo(paginaId) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'))
   document.getElementById(`nav-${paginaId}`)?.classList.add('active')
 }
+
