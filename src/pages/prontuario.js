@@ -962,7 +962,7 @@ function imprimirPrescricao(p, l, hoje, dataInt) {
     '.presc-titulo { text-align:center; font-size:9pt; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; border:1px solid #bbb; border-top:none; padding:4px; background:#f5f5f5; }' +
 
     // Assinatura
-    '.assinatura { margin-top:20px; display:flex; justify-content:flex-end; }' +
+    '.assinatura { margin-top:50px; display:flex; justify-content:flex-end; }' +
     '.assin-box { text-align:center; width:200px; }' +
     '.assin-linha { border-top:1.5px solid #000; margin-bottom:4px; }' +
     '.assin-nome { font-size:10pt; font-weight:bold; }' +
@@ -1036,7 +1036,7 @@ function imprimirPrescricao(p, l, hoje, dataInt) {
     '<thead><tr>' +
     '<th style="border:1px solid #bbb;border-top:none;width:26px;padding:4px 3px;font-size:8.5pt;text-align:center;background:#f5f5f5">Nº</th>' +
     '<th style="border:1px solid #bbb;border-top:none;padding:4px 8px;font-size:8.5pt;text-align:left;background:#f5f5f5">Prescrição Médica</th>' +
-    '<th style="border:1px solid #bbb;border-top:none;width:175px;padding:4px 8px;font-size:8.5pt;text-align:center;background:#f5f5f5">Horários</th>' +
+    '<th style="border:1px solid #bbb;border-top:none;width:210px;padding:4px 8px;font-size:8.5pt;text-align:center;background:#f5f5f5">Horários</th>' +
     '</tr></thead>' +
     '<tbody>' + linhasHTML + '</tbody>' +
     '</table>' +
@@ -1116,7 +1116,7 @@ function imprimirEvolucaoObj(h, l, hoje, agora, dataInt) {
     '.vital-item { flex:1; text-align:center; border:1px solid #ccc; border-radius:3px; padding:5px 3px; }' +
     '.vital-label { font-size:6.5pt; color:#666; text-transform:uppercase; display:block; margin-bottom:2px; }' +
     '.vital-val { font-size:12pt; font-weight:bold; display:block; }' +
-    '.assinatura { margin-top:16px; display:flex; justify-content:flex-end; }' +
+    '.assinatura { margin-top:50px; display:flex; justify-content:flex-end; }' +
     '.assin-box { text-align:center; width:220px; }' +
     '.assin-linha { border-top:1.5px solid #000; margin-bottom:4px; }' +
     '.assin-nome { font-size:10pt; font-weight:bold; }' +
@@ -1260,7 +1260,7 @@ function imprimirEvolucao(p, l, hoje, agora, dataInt) {
     '.vital-item { flex:1; text-align:center; border:1px solid #ccc; border-radius:3px; padding:5px 3px; }' +
     '.vital-label { font-size:6.5pt; color:#666; text-transform:uppercase; display:block; margin-bottom:2px; }' +
     '.vital-val { font-size:12pt; font-weight:bold; display:block; }' +
-    '.assinatura { margin-top:16px; display:flex; justify-content:flex-end; }' +
+    '.assinatura { margin-top:50px; display:flex; justify-content:flex-end; }' +
     '.assin-box { text-align:center; width:220px; }' +
     '.assin-linha { border-top:1.5px solid #000; margin-bottom:4px; }' +
     '.assin-nome { font-size:10pt; font-weight:bold; }' +

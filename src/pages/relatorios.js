@@ -19,6 +19,8 @@ export async function init(container) {
       <div class="flex border-b border-gray-200 px-5 bg-white flex-shrink-0">
         <button class="pront-tab active" data-rel="censo"><i class="ti ti-layout-list text-sm"></i> Censo por Ala</button>
         <button class="pront-tab" data-rel="dietas"><i class="ti ti-soup text-sm"></i> Dietas — Copeira</button>
+        <button class="pront-tab" data-rel="internados"><i class="ti ti-chart-bar text-sm"></i> Internados por Período</button>
+        <button class="pront-tab" data-rel="altas"><i class="ti ti-door-exit text-sm"></i> Altas por Período</button>
       </div>
 
       <div id="rel-content" class="flex-1 overflow-y-auto px-5 py-4">
@@ -45,7 +47,9 @@ export async function init(container) {
   document.getElementById('btn-imprimir').addEventListener('click', () => {
     const ativo = document.querySelector('.pront-tab.active')?.dataset.rel || 'censo'
     if (ativo === 'censo') imprimirCenso()
-    else imprimirDietas()
+    else if (ativo === 'dietas') imprimirDietas()
+    else if (ativo === 'internados') imprimirInternados()
+    else if (ativo === 'altas') imprimirAltas()
   })
 
   await carregarRelatorio('censo')
@@ -74,7 +78,9 @@ async function carregarRelatorio(tipo) {
     _internacoes = internacoes
 
     if (tipo === 'censo') renderCenso(rc, internacoes)
-    else renderDietas(rc, internacoes)
+    else if (tipo === 'dietas') renderDietas(rc, internacoes)
+    else if (tipo === 'internados') await renderInternados(rc)
+    else if (tipo === 'altas') await renderAltas(rc)
 
   } catch (err) {
     rc.innerHTML = `<div class="alert alert-red"><i class="ti ti-alert-circle"></i> Erro: ${err.message}</div>`
@@ -87,8 +93,8 @@ function renderCenso(container, internacoes) {
     'Aguardando Leito - Medicação',
     'Aguardando Leito - Intermediário',
     'Aguardando Leito - Sala de Emergência',
-    'Internação',
-    'Internação - Isolamento',
+    'Observação',
+    'Observação - Isolamento',
   ]
 
   const agora = new Date().toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' })
@@ -114,7 +120,7 @@ function renderCenso(container, internacoes) {
       <div class="grid grid-cols-5 gap-3 no-print">
         ${setores.map(s => {
           const count = internacoes.filter(i => i.leito?.setor === s).length
-          const label = s.replace('Aguardando Leito - ','').replace('Internação - ','')
+          const label = s.replace('Aguardando Leito - ','').replace('Observação - ','')
           return `
             <div class="bg-white border border-gray-200 rounded-lg p-3 text-center">
               <div class="text-xl font-bold text-gray-800">${count}</div>
@@ -128,7 +134,7 @@ function renderCenso(container, internacoes) {
         const pacs = internacoes.filter(i => i.leito?.setor === setor)
         const labelSetor = setor
         const ocupacao = pacs.length
-        const totalLeitos = { 'Aguardando Leito - Medicação':10, 'Aguardando Leito - Intermediário':10, 'Aguardando Leito - Sala de Emergência':4, 'Internação':18, 'Internação - Isolamento':2 }[setor] || '—'
+        const totalLeitos = { 'Aguardando Leito - Medicação':10, 'Aguardando Leito - Intermediário':10, 'Aguardando Leito - Sala de Emergência':4, 'Observação':18, 'Observação - Isolamento':2 }[setor] || '—'
 
         return `
           <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -154,7 +160,7 @@ function renderCenso(container, internacoes) {
                   <th>Leito</th>
                   <th>Paciente</th>
                   <th>Idade</th>
-                  <th>Internação</th>
+                  <th>Observação</th>
                   <th>Dias</th>
                   <th>Diagnóstico</th>
                   <th>Médico</th>
@@ -216,8 +222,8 @@ function renderCenso(container, internacoes) {
               <option value="Aguardando Leito - Medicação">Aguardando Leito — Medicação</option>
               <option value="Aguardando Leito - Intermediário">Aguardando Leito — Intermediário</option>
               <option value="Aguardando Leito - Sala de Emergência">Aguardando Leito — Sala de Emergência</option>
-              <option value="Internação">Internação</option>
-              <option value="Internação - Isolamento">Internação — Isolamento</option>
+              <option value="Observação">Observação</option>
+              <option value="Observação - Isolamento">Observação — Isolamento</option>
             </select>
           </div>
           <div id="tr-leitos-disponiveis" class="hidden">
@@ -360,8 +366,8 @@ async function buscarDietasERenderar(container, internacoes, agora) {
     'Aguardando Leito - Medicação',
     'Aguardando Leito - Intermediário',
     'Aguardando Leito - Sala de Emergência',
-    'Internação',
-    'Internação - Isolamento',
+    'Observação',
+    'Observação - Isolamento',
   ]
 
   // Agrupa dietas únicas para resumo
@@ -450,6 +456,229 @@ async function buscarDietasERenderar(container, internacoes, agora) {
   `
 }
 
+// ── INTERNADOS POR PERÍODO ────────────────────────────────────
+async function renderInternados(container) {
+  const hoje = new Date()
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0]
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().split('T')[0]
+
+  container.innerHTML = `
+    <div class="flex flex-col gap-4">
+      <div class="card">
+        <div class="card-title flex items-center gap-2 mb-3"><i class="ti ti-filter text-primary-500"></i> Filtrar Período</div>
+        <div class="flex gap-3 items-end">
+          <div><label class="field-label">De</label><input id="int-de" type="date" class="field" value="${primeiroDia}"></div>
+          <div><label class="field-label">Até</label><input id="int-ate" type="date" class="field" value="${ultimoDia}"></div>
+          <button id="btn-buscar-int" class="btn btn-primary"><i class="ti ti-search text-sm"></i> Buscar</button>
+        </div>
+      </div>
+      <div id="int-resultado"></div>
+    </div>
+  `
+
+  const buscar = async () => {
+    const de = document.getElementById('int-de').value
+    const ate = document.getElementById('int-ate').value
+    const res = document.getElementById('int-resultado')
+    res.innerHTML = `<div class="flex justify-center py-6"><i class="ti ti-loader-2 animate-spin text-primary-500 text-2xl"></i></div>`
+
+    const { data, error } = await supabase
+      .from('internacoes')
+      .select('*, paciente:pacientes(nome, codigo_sus, data_nascimento), leito:leitos(codigo, setor)')
+      .gte('data_internacao', de + 'T00:00:00')
+      .lte('data_internacao', ate + 'T23:59:59')
+      .order('data_internacao', { ascending: false })
+
+    if (error) { res.innerHTML = `<div class="alert alert-red">${error.message}</div>`; return }
+
+    const internacoes = data || []
+    _internadosPeriodo = internacoes
+
+    // Agrupa por setor
+    const porSetor = internacoes.reduce((acc, i) => {
+      const s = i.leito?.setor || 'Sem setor'
+      acc[s] = (acc[s]||0) + 1
+      return acc
+    }, {})
+
+    res.innerHTML = `
+      <div class="card mb-3">
+        <div class="flex items-center justify-between mb-3">
+          <div class="card-title mb-0 flex items-center gap-2"><i class="ti ti-users text-primary-500"></i> ${internacoes.length} internações no período</div>
+          <button id="btn-print-int" class="btn text-sm"><i class="ti ti-printer text-sm"></i> Imprimir</button>
+        </div>
+        <div class="flex gap-3 flex-wrap mb-4">
+          ${Object.entries(porSetor).map(([s,q]) => `
+            <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-center">
+              <div class="text-xl font-bold text-primary-500">${q}</div>
+              <div class="text-[11px] text-gray-500">${s.replace('Aguardando Leito - ','')}</div>
+            </div>`).join('')}
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Data</th><th>Paciente</th><th>Idade</th><th>Leito</th><th>Setor</th><th>Diagnóstico</th></tr></thead>
+          <tbody>
+            ${internacoes.map(i => `<tr>
+              <td class="text-xs">${i.data_internacao ? new Date(i.data_internacao).toLocaleDateString('pt-BR') : '—'}</td>
+              <td class="font-medium">${i.paciente?.nome||'—'}</td>
+              <td class="text-xs">${calcularIdadeImp(i.paciente?.data_nascimento)}</td>
+              <td class="font-semibold">${i.leito?.codigo||'—'}</td>
+              <td class="text-xs">${i.leito?.setor||'—'}</td>
+              <td class="text-xs">${i.diagnostico||'—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+    document.getElementById('btn-print-int')?.addEventListener('click', imprimirInternados)
+  }
+
+  document.getElementById('btn-buscar-int').addEventListener('click', buscar)
+  await buscar()
+}
+
+// ── ALTAS POR PERÍODO ─────────────────────────────────────────
+async function renderAltas(container) {
+  const hoje = new Date()
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0]
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().split('T')[0]
+
+  container.innerHTML = `
+    <div class="flex flex-col gap-4">
+      <div class="card">
+        <div class="card-title flex items-center gap-2 mb-3"><i class="ti ti-filter text-primary-500"></i> Filtrar Período</div>
+        <div class="flex gap-3 items-end">
+          <div><label class="field-label">De</label><input id="alt-de" type="date" class="field" value="${primeiroDia}"></div>
+          <div><label class="field-label">Até</label><input id="alt-ate" type="date" class="field" value="${ultimoDia}"></div>
+          <button id="btn-buscar-alt" class="btn btn-primary"><i class="ti ti-search text-sm"></i> Buscar</button>
+        </div>
+      </div>
+      <div id="alt-resultado"></div>
+    </div>
+  `
+
+  const TIPOS = ['Alta', 'Transferência', 'SAD', 'Óbito', 'Evasão']
+  const CORES = { 'Alta':'bg-green-100 text-green-700', 'Transferência':'bg-blue-100 text-blue-700', 'SAD':'bg-purple-100 text-purple-700', 'Óbito':'bg-gray-200 text-gray-700', 'Evasão':'bg-red-100 text-red-700' }
+
+  const buscar = async () => {
+    const de = document.getElementById('alt-de').value
+    const ate = document.getElementById('alt-ate').value
+    const res = document.getElementById('alt-resultado')
+    res.innerHTML = `<div class="flex justify-center py-6"><i class="ti ti-loader-2 animate-spin text-primary-500 text-2xl"></i></div>`
+
+    const { data, error } = await supabase
+      .from('desfechos')
+      .select('*, internacao:internacoes(diagnostico, paciente:pacientes(nome, data_nascimento), leito:leitos(codigo, setor))')
+      .gte('created_at', de + 'T00:00:00')
+      .lte('created_at', ate + 'T23:59:59')
+      .order('created_at', { ascending: false })
+
+    if (error) { res.innerHTML = `<div class="alert alert-red">${error.message}</div>`; return }
+
+    const desfechos = data || []
+    _altasPeriodo = desfechos
+
+    const porTipo = TIPOS.reduce((acc, t) => { acc[t] = desfechos.filter(d => d.tipo === t).length; return acc }, {})
+
+    res.innerHTML = `
+      <div class="card mb-3">
+        <div class="flex items-center justify-between mb-3">
+          <div class="card-title mb-0 flex items-center gap-2"><i class="ti ti-door-exit text-primary-500"></i> ${desfechos.length} desfechos no período</div>
+          <button id="btn-print-alt" class="btn text-sm"><i class="ti ti-printer text-sm"></i> Imprimir</button>
+        </div>
+        <div class="flex gap-3 flex-wrap mb-4">
+          ${TIPOS.map(t => `
+            <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-center">
+              <div class="text-xl font-bold text-primary-500">${porTipo[t]}</div>
+              <div class="text-[11px] text-gray-500">${t}</div>
+            </div>`).join('')}
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Data</th><th>Paciente</th><th>Tipo</th><th>Leito</th><th>Diagnóstico</th><th>Observação</th></tr></thead>
+          <tbody>
+            ${desfechos.map(d => `<tr>
+              <td class="text-xs">${new Date(d.created_at).toLocaleDateString('pt-BR')}</td>
+              <td class="font-medium">${d.internacao?.paciente?.nome||'—'}</td>
+              <td><span class="text-[11px] px-2 py-0.5 rounded font-medium ${CORES[d.tipo]||''}">${d.tipo||'—'}</span></td>
+              <td class="font-semibold">${d.internacao?.leito?.codigo||'—'}</td>
+              <td class="text-xs">${d.internacao?.diagnostico||'—'}</td>
+              <td class="text-xs">${d.observacoes||'—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+    document.getElementById('btn-print-alt')?.addEventListener('click', imprimirAltas)
+  }
+
+  document.getElementById('btn-buscar-alt').addEventListener('click', buscar)
+  await buscar()
+}
+
+let _internadosPeriodo = []
+let _altasPeriodo = []
+
+function imprimirInternados() {
+  const de = document.getElementById('int-de')?.value || ''
+  const ate = document.getElementById('int-ate')?.value || ''
+  const agora = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+  const periodoFmt = (de ? new Date(de+'T12:00:00').toLocaleDateString('pt-BR') : '') + ' a ' + (ate ? new Date(ate+'T12:00:00').toLocaleDateString('pt-BR') : '')
+
+  const linhas = _internadosPeriodo.map(i =>
+    '<tr>' +
+    '<td>' + (i.data_internacao ? new Date(i.data_internacao).toLocaleDateString('pt-BR') : '—') + '</td>' +
+    '<td>' + escHtml(i.paciente?.nome||'—') + '</td>' +
+    '<td>' + escHtml(calcularIdadeImp(i.paciente?.data_nascimento)) + '</td>' +
+    '<td style="font-weight:bold">' + escHtml(i.leito?.codigo||'—') + '</td>' +
+    '<td>' + escHtml(i.leito?.setor||'—') + '</td>' +
+    '<td>' + escHtml(i.diagnostico||'—') + '</td>' +
+    '</tr>'
+  ).join('')
+
+  const html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Internados por Período</title>' +
+    '<style>' + estilosImpressao() + '</style></head><body><div class="page">' +
+    cabecalhoImpressao() +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px;">' +
+    '<span style="font-size:10pt;font-weight:bold">Internações por Período</span>' +
+    '<span style="font-size:8.5pt;color:#555">' + periodoFmt + ' · ' + _internadosPeriodo.length + ' internação(ões)</span>' +
+    '</div>' +
+    '<table><thead><tr><th>Data</th><th>Paciente</th><th>Idade</th><th>Leito</th><th>Setor</th><th>Diagnóstico</th></tr></thead>' +
+    '<tbody>' + linhas + '</tbody></table>' +
+    '<div class="rodape">SigmaPEP · UPA Zona Sul – Maringá/PR · ' + agora + '</div>' +
+    '</div><script>window.onload=function(){window.print()}<\/script></body></html>'
+  abrirJanela(html)
+}
+
+function imprimirAltas() {
+  const de = document.getElementById('alt-de')?.value || ''
+  const ate = document.getElementById('alt-ate')?.value || ''
+  const agora = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+  const periodoFmt = (de ? new Date(de+'T12:00:00').toLocaleDateString('pt-BR') : '') + ' a ' + (ate ? new Date(ate+'T12:00:00').toLocaleDateString('pt-BR') : '')
+
+  const linhas = _altasPeriodo.map(d =>
+    '<tr>' +
+    '<td>' + new Date(d.created_at).toLocaleDateString('pt-BR') + '</td>' +
+    '<td>' + escHtml(d.internacao?.paciente?.nome||'—') + '</td>' +
+    '<td style="font-weight:bold">' + escHtml(d.tipo||'—') + '</td>' +
+    '<td>' + escHtml(d.internacao?.leito?.codigo||'—') + '</td>' +
+    '<td>' + escHtml(d.internacao?.diagnostico||'—') + '</td>' +
+    '<td>' + escHtml(d.observacoes||'—') + '</td>' +
+    '</tr>'
+  ).join('')
+
+  const html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Altas por Período</title>' +
+    '<style>' + estilosImpressao() + '</style></head><body><div class="page">' +
+    cabecalhoImpressao() +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px;">' +
+    '<span style="font-size:10pt;font-weight:bold">Desfechos por Período</span>' +
+    '<span style="font-size:8.5pt;color:#555">' + periodoFmt + ' · ' + _altasPeriodo.length + ' desfecho(s)</span>' +
+    '</div>' +
+    '<table><thead><tr><th>Data</th><th>Paciente</th><th>Tipo</th><th>Leito</th><th>Diagnóstico</th><th>Observação</th></tr></thead>' +
+    '<tbody>' + linhas + '</tbody></table>' +
+    '<div class="rodape">SigmaPEP · UPA Zona Sul – Maringá/PR · ' + agora + '</div>' +
+    '</div><script>window.onload=function(){window.print()}<\/script></body></html>'
+  abrirJanela(html)
+}
+
 // Cache dos dados para impressão
 let _internacoes = []
 let _dietasPorInternacao = {}
@@ -494,8 +723,8 @@ function imprimirCenso() {
     'Aguardando Leito - Medicação',
     'Aguardando Leito - Intermediário',
     'Aguardando Leito - Sala de Emergência',
-    'Internação',
-    'Internação - Isolamento',
+    'Observação',
+    'Observação - Isolamento',
   ]
 
   const agora = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
@@ -551,8 +780,8 @@ function imprimirDietas() {
     'Aguardando Leito - Medicação',
     'Aguardando Leito - Intermediário',
     'Aguardando Leito - Sala de Emergência',
-    'Internação',
-    'Internação - Isolamento',
+    'Observação',
+    'Observação - Isolamento',
   ]
 
   const agora = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })

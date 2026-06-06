@@ -18,6 +18,7 @@ export function renderSidebar(paginaAtiva = 'leitos') {
     { id: 'lista-alta', icon: 'ti-door-exit',       label: 'Alta Hospitalar' },
     { id: 'relatorios', icon: 'ti-chart-bar',       label: 'Relatórios'   },
     { id: 'usuarios',   icon: 'ti-user-circle',     label: 'Usuários' },
+    { id: 'mensagens',  icon: 'ti-message-circle',   label: 'Mensagens' },
     { id: 'config',     icon: 'ti-settings',        label: 'Configurações' },
   ]
 

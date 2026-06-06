@@ -13,6 +13,7 @@ router.register('pacientes',        () => import('./pages/pacientes.js'))
 router.register('relatorios',       () => import('./pages/relatorios.js'))
 router.register('gerenciar-leitos', () => import('./pages/gerenciar-leitos.js'))
 router.register('usuarios',         () => import('./pages/usuarios.js'))
+router.register('mensagens',        () => import('./pages/mensagens.js'))
 router.register('config',           () => import('./pages/configuracoes.js'))
 
 async function montarApp() {
