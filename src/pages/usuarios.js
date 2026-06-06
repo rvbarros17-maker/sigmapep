@@ -188,7 +188,7 @@ async function renderUsuarios(container) {
       return
     }
 
-    const email = login + '@sigmapep.local'
+    const email = login + '@sigmapep.app'
 
     const btn = document.getElementById('modal-user-salvar')
     btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-sm"></i> Criando...'

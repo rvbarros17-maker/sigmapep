@@ -2,7 +2,7 @@
 import { supabase } from './supabase.js'
 
 export const ADMIN_EMAIL = 'admin@sigmapep.app'
-const DOMAIN = '@sigmapep.local'
+const DOMAIN = '@sigmapep.app'
 
 // Converte login livre para email fictício
 export function loginParaEmail(login) {
