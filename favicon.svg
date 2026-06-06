@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#0e4d3a"/>
+  <!-- S shape -->
+  <path d="M30 35 C30 25 70 25 70 40 C70 52 35 48 35 60 C35 75 70 75 70 65" 
+        stroke="white" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <!-- Cruz médica -->
+  <rect x="44" y="30" width="12" height="28" rx="3" fill="#1a9e6a"/>
+  <rect x="36" y="38" width="28" height="12" rx="3" fill="#1a9e6a"/>
+</svg>
