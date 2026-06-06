@@ -42,7 +42,7 @@ async function renderUsuarios(container) {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>E-mail</th>
+                <th>Login</th>
                 <th>Perfil</th>
                 <th>CRM</th>
                 <th>Status</th>
@@ -55,7 +55,7 @@ async function renderUsuarios(container) {
               ` : usuarios.map(u => `
                 <tr>
                   <td class="font-semibold text-gray-800">${u.nome}</td>
-                  <td class="text-gray-500 text-xs">${u.email || '—'}</td>
+                  <td class="text-gray-500 text-xs">${u.login || '—'}</td>
                   <td><span class="badge badge-${badgePerfil(u.perfil)}">${u.perfil}</span></td>
                   <td class="text-gray-500 text-xs">${u.crm || '—'}</td>
                   <td>
@@ -92,7 +92,13 @@ async function renderUsuarios(container) {
         </div>
         <div class="p-4 flex flex-col gap-3">
           <div><label class="field-label">Nome completo *</label><input id="nu-nome" type="text" class="field" placeholder="Nome completo"></div>
-          <div><label class="field-label">E-mail *</label><input id="nu-email" type="email" class="field" placeholder="email@upa.com"></div>
+          <div>
+            <label class="field-label">Login *</label>
+            <div class="relative">
+              <input id="nu-login" type="text" class="field" placeholder="Ex: joao.silva">
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1">Sem espaços ou caracteres especiais. Ex: joao.silva, maria.enfermagem</p>
+          </div>
           <div><label class="field-label">Perfil *</label>
             <select id="nu-perfil" class="field">
               <option value="">Selecione o perfil</option>
@@ -171,29 +177,29 @@ async function renderUsuarios(container) {
   // Salvar novo usuário
   document.getElementById('modal-user-salvar').addEventListener('click', async () => {
     const nome   = document.getElementById('nu-nome').value.trim()
-    const email  = document.getElementById('nu-email').value.trim()
+    const login  = document.getElementById('nu-login').value.trim().toLowerCase().replace(/\s+/g,'.')
     const perfil = document.getElementById('nu-perfil').value
     const senha  = document.getElementById('nu-senha').value
     const crm    = document.getElementById('nu-crm').value.trim()
 
-    if (!nome || !email || !perfil || !senha) {
+    if (!nome || !login || !perfil || !senha) {
       document.getElementById('modal-user-erro').textContent = 'Preencha todos os campos obrigatórios.'
       document.getElementById('modal-user-erro').classList.remove('hidden')
       return
     }
 
+    const email = login + '@sigmapep.local'
+
     const btn = document.getElementById('modal-user-salvar')
     btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-sm"></i> Criando...'
 
     try {
-      // Cria usuário no Auth
       const { data, error: e1 } = await supabase.auth.signUp({ email, password: senha })
       if (e1) throw e1
 
-      // Salva perfil
       const { error: e2 } = await supabase.from('usuarios').insert({
         auth_id: data.user.id,
-        nome, perfil, crm: crm || null, primeiro_acesso: true, email,
+        nome, perfil, crm: crm || null, primeiro_acesso: true, login, email,
       })
       if (e2) throw e2
 

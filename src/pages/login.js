@@ -45,10 +45,10 @@ function renderLogin(container) {
 
           <div class="flex flex-col gap-3">
             <div>
-              <label class="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Login</label>
               <div class="relative">
-                <i class="ti ti-mail absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                <input id="login-email" type="email" placeholder="seu@email.com"
+                <i class="ti ti-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input id="login-email" type="text" placeholder="Ex: joao.silva"
                   class="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-200 transition-colors">
               </div>
             </div>
