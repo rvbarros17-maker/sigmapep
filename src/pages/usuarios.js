@@ -90,14 +90,37 @@ async function renderUsuarios(container) {
           <h3 class="font-semibold text-gray-900">Novo Usuário</h3>
           <button id="modal-user-fechar" class="text-gray-400 hover:text-gray-600"><i class="ti ti-x"></i></button>
         </div>
-        <div class="p-4 flex flex-col gap-3">
+
+        <!-- Passo 1: instruções -->
+        <div id="passo1" class="p-4">
+          <div class="bg-amber-50 border border-amber-200 rounded-lg px-3 py-3 mb-4 text-xs text-amber-800">
+            <p class="font-semibold mb-1 flex items-center gap-1"><i class="ti ti-info-circle"></i> Como criar um novo usuário:</p>
+            <ol class="list-decimal ml-4 space-y-1">
+              <li>Acesse o <b>painel do Supabase</b></li>
+              <li>Vá em <b>Authentication → Users → Add User</b></li>
+              <li>Informe o email no formato: <b>login@sigmapep.app</b></li>
+              <li>Defina uma senha temporária</li>
+              <li>Clique em <b>Create User</b> no Supabase</li>
+              <li>Volte aqui e clique em <b>Continuar</b></li>
+            </ol>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button id="passo1-cancelar" class="btn">Cancelar</button>
+            <a href="https://supabase.com/dashboard/project/ahhnflbiadbvlorhfkrc/auth/users" target="_blank" class="btn btn-primary flex items-center gap-1">
+              <i class="ti ti-external-link text-sm"></i> Abrir Supabase
+            </a>
+            <button id="passo1-continuar" class="btn btn-primary"><i class="ti ti-arrow-right text-sm"></i> Continuar</button>
+          </div>
+        </div>
+
+        <!-- Passo 2: dados do perfil -->
+        <div id="passo2" class="hidden p-4 flex flex-col gap-3">
+          <p class="text-xs text-gray-500 mb-1">Preencha os dados do perfil do usuário criado no Supabase:</p>
           <div><label class="field-label">Nome completo *</label><input id="nu-nome" type="text" class="field" placeholder="Nome completo"></div>
           <div>
             <label class="field-label">Login *</label>
-            <div class="relative">
-              <input id="nu-login" type="text" class="field" placeholder="Ex: joao.silva">
-            </div>
-            <p class="text-[10px] text-gray-400 mt-1">Sem espaços ou caracteres especiais. Ex: joao.silva, maria.enfermagem</p>
+            <input id="nu-login" type="text" class="field" placeholder="Ex: joao.silva (mesmo usado no Supabase, sem @sigmapep.app)">
+            <p class="text-[10px] text-gray-400 mt-1">Deve ser o mesmo login usado ao criar no Supabase.</p>
           </div>
           <div><label class="field-label">Perfil *</label>
             <select id="nu-perfil" class="field">
@@ -106,20 +129,13 @@ async function renderUsuarios(container) {
             </select>
           </div>
           <div id="nu-crm-wrap" class="hidden"><label class="field-label">CRM</label><input id="nu-crm" type="text" class="field" placeholder="Ex: 12345/PR"></div>
-          <div>
-            <label class="field-label">Senha temporária *</label>
-            <div class="flex gap-2">
-              <input id="nu-senha" type="text" class="field flex-1" placeholder="Defina uma senha temporária">
-              <button id="nu-gerar-senha" class="btn text-xs whitespace-nowrap">Gerar</button>
-            </div>
-            <p class="text-[10px] text-gray-400 mt-1">O usuário deverá trocar no primeiro acesso.</p>
+          <div id="modal-user-erro" class="hidden bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2"></div>
+          <div class="flex justify-end gap-2 pt-1">
+            <button id="passo2-voltar" class="btn">Voltar</button>
+            <button id="modal-user-salvar" class="btn btn-primary"><i class="ti ti-plus text-sm"></i> Criar Usuário</button>
           </div>
         </div>
-        <div id="modal-user-erro" class="hidden mx-4 mb-2 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2"></div>
-        <div class="flex justify-end gap-2 p-4 border-t border-gray-100">
-          <button id="modal-user-cancelar" class="btn">Cancelar</button>
-          <button id="modal-user-salvar" class="btn btn-primary"><i class="ti ti-plus text-sm"></i> Criar Usuário</button>
-        </div>
+
       </div>
     </div>
 
@@ -151,13 +167,23 @@ async function renderUsuarios(container) {
 
   // Listeners
   document.getElementById('btn-novo-usuario').addEventListener('click', () => {
+    document.getElementById('passo1').classList.remove('hidden')
+    document.getElementById('passo2').classList.add('hidden')
     document.getElementById('modal-novo-user').classList.remove('hidden')
   })
   document.getElementById('modal-user-fechar').addEventListener('click', () => {
     document.getElementById('modal-novo-user').classList.add('hidden')
   })
-  document.getElementById('modal-user-cancelar').addEventListener('click', () => {
+  document.getElementById('passo1-cancelar').addEventListener('click', () => {
     document.getElementById('modal-novo-user').classList.add('hidden')
+  })
+  document.getElementById('passo1-continuar').addEventListener('click', () => {
+    document.getElementById('passo1').classList.add('hidden')
+    document.getElementById('passo2').classList.remove('hidden')
+  })
+  document.getElementById('passo2-voltar').addEventListener('click', () => {
+    document.getElementById('passo1').classList.remove('hidden')
+    document.getElementById('passo2').classList.add('hidden')
   })
 
   // Mostrar CRM só se perfil = Médico
@@ -165,41 +191,34 @@ async function renderUsuarios(container) {
     document.getElementById('nu-crm-wrap').classList.toggle('hidden', e.target.value !== 'Médico')
   })
 
-  // Gerar senha aleatória
-  function gerarSenha() {
-    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!'
-    return Array.from({length: 8}, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-  }
-  document.getElementById('nu-gerar-senha').addEventListener('click', () => {
-    document.getElementById('nu-senha').value = gerarSenha()
-  })
-
-  // Salvar novo usuário
+  // Salvar perfil do usuário (já criado no Supabase Auth)
   document.getElementById('modal-user-salvar').addEventListener('click', async () => {
     const nome   = document.getElementById('nu-nome').value.trim()
     const login  = document.getElementById('nu-login').value.trim().toLowerCase().replace(/\s+/g,'.')
     const perfil = document.getElementById('nu-perfil').value
-    const senha  = document.getElementById('nu-senha').value
-    const crm    = document.getElementById('nu-crm').value.trim()
+    const crm    = document.getElementById('nu-crm')?.value.trim()
 
-    if (!nome || !login || !perfil || !senha) {
+    if (!nome || !login || !perfil) {
       document.getElementById('modal-user-erro').textContent = 'Preencha todos os campos obrigatórios.'
       document.getElementById('modal-user-erro').classList.remove('hidden')
       return
     }
 
-    const email = login + '@sigmapep.app'
-
     const btn = document.getElementById('modal-user-salvar')
-    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-sm"></i> Criando...'
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-sm"></i> Salvando...'
 
     try {
-      const { data, error: e1 } = await supabase.auth.signUp({ email, password: senha })
-      if (e1) throw e1
+      const email = login + '@sigmapep.app'
+
+      // Busca o auth_id pelo email no Supabase
+      const { data: authData, error: eAuth } = await supabase.rpc('get_user_id_by_email', { user_email: email })
+      if (eAuth || !authData) throw new Error('Usuário não encontrado no Supabase Auth. Verifique se o login foi criado corretamente.')
 
       const { error: e2 } = await supabase.from('usuarios').insert({
-        auth_id: data.user.id,
-        nome, perfil, crm: crm || null, primeiro_acesso: true, login, email,
+        auth_id: authData,
+        nome, login, email, perfil,
+        crm: crm || null,
+        primeiro_acesso: true,
       })
       if (e2) throw e2
 
