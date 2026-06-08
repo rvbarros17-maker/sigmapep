@@ -6,7 +6,7 @@ import { isAdmin } from '../services/auth.js'
 export async function init(container) {
   setNavAtivo('mensagens')
 
-  const usuario = JSON.parse(sessionStorage.getItem('sigmapep_usuario') || 'null')
+  const usuario = JSON.parse(localStorage.getItem('sigmapep_usuario') || 'null')
   const admin = isAdmin(usuario)
 
   container.innerHTML = `

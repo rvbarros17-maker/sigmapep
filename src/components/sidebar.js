@@ -2,7 +2,7 @@
 import { signOut } from '../services/auth.js'
 
 export function renderSidebar(paginaAtiva = 'leitos') {
-  const usuario = JSON.parse(sessionStorage.getItem('sigmapep_usuario') || 'null')
+  const usuario = JSON.parse(localStorage.getItem('sigmapep_usuario') || 'null')
   const nome = usuario?.nome || 'Usuário'
   const perfil = usuario?.perfil || ''
   const crm = usuario?.crm || ''
@@ -71,7 +71,7 @@ export function bindSidebarNav(router) {
 
   document.getElementById('btn-sair')?.addEventListener('click', async () => {
     await signOut()
-    sessionStorage.removeItem('sigmapep_usuario')
+    localStorage.removeItem('sigmapep_usuario')
     router.navigate('login')
   })
 }

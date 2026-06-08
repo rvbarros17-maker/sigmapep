@@ -9,7 +9,7 @@ const PERFIS = ['Médico', 'Enfermagem', 'Administrativo', 'Coordenação', 'Dir
 export async function init(container) {
   setNavAtivo('usuarios')
 
-  const usuario = JSON.parse(sessionStorage.getItem('sigmapep_usuario') || 'null')
+  const usuario = JSON.parse(localStorage.getItem('sigmapep_usuario') || 'null')
   if (!isAdmin(usuario)) {
     container.innerHTML = `<div class="p-5"><div class="alert alert-red"><i class="ti ti-lock"></i> Acesso restrito ao administrador.</div></div>`
     return

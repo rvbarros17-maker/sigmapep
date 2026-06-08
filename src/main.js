@@ -34,7 +34,7 @@ async function montarApp() {
   }
 
   // Salva usuário na sessão
-  sessionStorage.setItem('sigmapep_usuario', JSON.stringify(usuario))
+  localStorage.setItem('sigmapep_usuario', JSON.stringify(usuario))
 
   // Com sessão — monta app completo
   app.className = 'flex h-screen bg-gray-100 overflow-hidden'
@@ -58,7 +58,7 @@ router.navigate = async function(name, params = {}) {
   } else if (name !== 'login' && !document.getElementById('page-container')) {
     // Reconstrói app com sidebar se não existir
     const app = document.getElementById('app')
-    const usuario = JSON.parse(sessionStorage.getItem('sigmapep_usuario') || 'null')
+    const usuario = JSON.parse(localStorage.getItem('sigmapep_usuario') || 'null')
     app.className = 'flex h-screen bg-gray-100 overflow-hidden'
     app.innerHTML = `
       ${renderSidebar(name)}
