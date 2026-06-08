@@ -180,6 +180,7 @@ async function carregarPrescricao() {
           <div id="sign-nome" class="text-[13px] font-bold text-gray-800">${presc?.medico_responsavel || '—'}</div>
         </div>
         <div class="flex gap-2">
+          <button id="btn-copiar-presc" class="btn" title="Copiar prescrição para área de transferência"><i class="ti ti-copy text-sm"></i> Copiar</button>
           <button id="btn-imprimir-presc" class="btn"><i class="ti ti-printer text-sm"></i> Imprimir</button>
           <button id="btn-salvar-presc" class="btn btn-primary"><i class="ti ti-device-floppy text-sm"></i> Salvar Prescrição</button>
         </div>
@@ -286,6 +287,7 @@ async function carregarPrescricao() {
   })
   bindDelSolic()
 
+  document.getElementById('btn-copiar-presc').addEventListener('click', () => copiarPrescricao())
   document.getElementById('btn-imprimir-presc').addEventListener('click', () => imprimirDocumento('prescricao'))
   document.getElementById('btn-salvar-presc').addEventListener('click', salvarPrescricao)
 }
@@ -588,7 +590,7 @@ async function carregarEvolucao() {
       const hojeFmt = dt.toLocaleDateString('pt-BR')
       const agoraFmt = dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})
       const dataInt = internacaoAtual.data_internacao ? new Date(internacaoAtual.data_internacao+'T12:00:00').toLocaleDateString('pt-BR') : '—'
-      imprimirEvolucaoObj(h, leitoAtual, hojeFmt, agoraFmt, dataInt)
+      imprimirEvolucaoObj(h, internacaoAtual.leito || {}, hojeFmt, agoraFmt, dataInt)
     })
   })
 }
@@ -879,6 +881,68 @@ function imprimirExames(mapaExames, nomeExames, todasDatas) {
 
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function copiarPrescricao() {
+  const p = internacaoAtual.paciente || {}
+  const diagnostico = document.getElementById('p-diagnostico')?.value || ''
+  const dieta = document.getElementById('p-dieta')?.value || ''
+  const medico = document.getElementById('p-medico')?.value || ''
+  const crm = document.getElementById('p-crm')?.value || ''
+
+  const itens = []
+  if (dieta) itens.push('1. ' + dieta.toUpperCase())
+
+  let num = 2
+  document.querySelectorAll('#meds-tbody tr[data-med-id]').forEach(tr => {
+    const tds = tr.querySelectorAll('td')
+    const nome = tds[0]?.textContent?.trim() || ''
+    const dose = tds[1]?.textContent?.trim() || ''
+    const via  = tds[2]?.textContent?.trim() || ''
+    const freq = tds[3]?.textContent?.trim() || ''
+    const obs  = (tds[4]?.textContent||'').replace(/[–—]/g,'').trim()
+    const diasTd = (tds[5]?.textContent||'').replace(/[–—]/g,'').trim()
+    const inicioTd = (tds[6]?.textContent||'').replace(/[–—]/g,'').trim()
+    let diaLabel = ''
+    if (diasTd && inicioTd) {
+      const [d,m,a] = inicioTd.split('/')
+      if (d && m && a) {
+        const dataInicio = new Date(`${a}-${m.padStart(2,'0')}-${d.padStart(2,'0')}T12:00:00`)
+        const diaAtual = Math.floor((Date.now() - dataInicio) / 86400000) + 1
+        diaLabel = ` D${diaAtual}/${diasTd}`
+      }
+    }
+    const linha = `${num}. ${nome} ${dose} – ${via} ${freq}${obs ? ' ('+obs+')' : ''}${diaLabel}`
+    itens.push(linha)
+    num++
+  })
+
+  document.querySelectorAll('#lista-solic [data-solic-id] span').forEach(el => {
+    itens.push(`${num}. ${el.textContent.trim()}`)
+    num++
+  })
+
+  const hoje = new Date().toLocaleDateString('pt-BR')
+  const texto = [
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `📋 PRESCRIÇÃO MÉDICA — ${hoje}`,
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `Paciente: ${p.nome || '—'}`,
+    `Leito: ${internacaoAtual.leito?.codigo || '—'} | ${internacaoAtual.leito?.setor || '—'}`,
+    `HD: ${diagnostico}`,
+    '',
+    ...itens,
+    '',
+    `Médico: ${medico}${crm ? ' — CRM/PR ' + crm : ''}`,
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+  ].join('\n')
+
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.getElementById('btn-copiar-presc')
+    const original = btn.innerHTML
+    btn.innerHTML = '<i class="ti ti-check text-sm text-green-500"></i> Copiado!'
+    setTimeout(() => { btn.innerHTML = original }, 2000)
+  })
 }
 
 function imprimirPrescricao(p, l, hoje, dataInt) {

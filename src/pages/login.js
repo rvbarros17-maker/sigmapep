@@ -19,9 +19,9 @@ export async function init(container) {
 }
 
 function renderLogin(container) {
-  container.className = 'flex h-screen bg-gradient-to-br from-[#0d3349] via-[#0e4d3a] to-[#0d3349] items-center justify-center'
+  container.className = 'w-full h-screen bg-gradient-to-br from-[#0d3349] via-[#0e4d3a] to-[#0d3349] flex items-center justify-center'
   container.innerHTML = `
-    <div class="flex flex-col items-center justify-center w-full px-4">
+    <div class="flex flex-col items-center w-full px-4">
 
       <!-- Card -->
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">

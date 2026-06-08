@@ -52,8 +52,8 @@ const originalNavigate = router.navigate.bind(router)
 router.navigate = async function(name, params = {}) {
   if (name === 'login') {
     const app = document.getElementById('app')
-    app.className = 'flex h-screen'
-    app.innerHTML = '<div id="login-container" class="flex h-screen w-full"></div>'
+    app.className = 'w-screen h-screen'
+    app.innerHTML = '<div id="login-container" class="w-full h-full"></div>'
     router.setContainer(document.getElementById('login-container'))
   } else if (name !== 'login' && !document.getElementById('page-container')) {
     // Reconstrói app com sidebar se não existir
