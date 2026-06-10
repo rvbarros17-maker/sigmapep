@@ -478,6 +478,7 @@ async function carregarEvolucao() {
           <div id="e-sign-nome" class="text-[13px] font-bold text-gray-800">${evol?.medico_responsavel||'—'}</div>
         </div>
         <div class="flex gap-2">
+          <button id="btn-copiar-evol" class="btn" title="Copiar evolução para área de transferência"><i class="ti ti-copy text-sm"></i> Copiar</button>
           <button id="btn-imprimir-evol" class="btn"><i class="ti ti-printer text-sm"></i> Imprimir</button>
           <button id="btn-salvar-evol" class="btn btn-primary"><i class="ti ti-device-floppy text-sm"></i> Salvar Evolução</button>
         </div>
@@ -515,7 +516,7 @@ async function carregarEvolucao() {
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <button class="btn text-[11px] py-1 px-2 btn-imprimir-hist" data-hist-id="${h.id}" onclick="event.stopPropagation()"><i class="ti ti-printer text-xs"></i> Imprimir</button>
+                  <button class="btn text-[11px] py-1 px-2 btn-imprimir-hist" data-hist-id="${h.id}"><i class="ti ti-printer text-xs"></i> Imprimir</button>
                   <i class="ti ti-chevron-down text-gray-400 text-sm"></i>
                 </div>
               </button>
@@ -577,15 +578,17 @@ async function carregarEvolucao() {
   })
   bindDelRes()
 
+  document.getElementById('btn-copiar-evol').addEventListener('click', () => copiarEvolucao())
   document.getElementById('btn-imprimir-evol').addEventListener('click', () => imprimirDocumento('evolucao'))
   document.getElementById('btn-salvar-evol').addEventListener('click', salvarEvolucao)
 
-  // Botões imprimir do histórico
+  // Botões imprimir do histórico — usar data attributes em vez de closure
   document.querySelectorAll('.btn-imprimir-hist').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
       const histId = btn.dataset.histId
-      const h = historico?.find(x => String(x.id) === String(histId))
-      if (!h) return
+      const h = (historico || []).find(x => String(x.id) === String(histId))
+      if (!h) { alert('Evolução não encontrada.'); return }
       const dt = new Date(h.created_at)
       const hojeFmt = dt.toLocaleDateString('pt-BR')
       const agoraFmt = dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})
@@ -883,6 +886,57 @@ function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
+function copiarEvolucao() {
+  const p = internacaoAtual.paciente || {}
+  const diagnostico = document.getElementById('e-diagnostico')?.value || ''
+  const texto = document.getElementById('e-texto')?.value || ''
+  const medico = document.getElementById('e-medico')?.value || ''
+  const crm = document.getElementById('e-crm')?.value || ''
+
+  const vitais = {
+    pa:    document.getElementById('v-pa')?.value || '',
+    pulso: document.getElementById('v-pulso')?.value || '',
+    spo2:  document.getElementById('v-spo2')?.value || '',
+    fr:    document.getElementById('v-fr')?.value || '',
+    gli:   document.getElementById('v-glicemia')?.value || '',
+    temp:  document.getElementById('v-temp')?.value || '',
+  }
+
+  const vitaisTexto = [
+    vitais.pa ? 'PA: ' + vitais.pa : '',
+    vitais.pulso ? 'Pulso: ' + vitais.pulso + 'bpm' : '',
+    vitais.spo2 ? 'SpO₂: ' + vitais.spo2 + '%' : '',
+    vitais.fr ? 'FR: ' + vitais.fr : '',
+    vitais.gli ? 'Glicemia: ' + vitais.gli : '',
+    vitais.temp ? 'Temp: ' + vitais.temp + '°C' : '',
+  ].filter(Boolean).join(' | ')
+
+  const hoje = new Date().toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'})
+
+  const t = [
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `📝 EVOLUÇÃO MÉDICA — ${hoje}`,
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `Paciente: ${p.nome || '—'}`,
+    `Leito: ${internacaoAtual.leito?.codigo || '—'} | ${internacaoAtual.leito?.setor || '—'}`,
+    `HD: ${diagnostico}`,
+    '',
+    vitaisTexto ? `SSVV: ${vitaisTexto}` : '',
+    '',
+    texto,
+    '',
+    `Médico: ${medico}${crm ? ' — CRM/PR ' + crm : ''}`,
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+  ].filter(l => l !== undefined).join('\n')
+
+  navigator.clipboard.writeText(t).then(() => {
+    const btn = document.getElementById('btn-copiar-evol')
+    const original = btn.innerHTML
+    btn.innerHTML = '<i class="ti ti-check text-sm text-green-500"></i> Copiado!'
+    setTimeout(() => { btn.innerHTML = original }, 2000)
+  })
+}
+
 function copiarPrescricao() {
   const p = internacaoAtual.paciente || {}
   const diagnostico = document.getElementById('p-diagnostico')?.value || ''
@@ -1026,7 +1080,7 @@ function imprimirPrescricao(p, l, hoje, dataInt) {
     '.presc-titulo { text-align:center; font-size:9pt; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; border:1px solid #bbb; border-top:none; padding:4px; background:#f5f5f5; }' +
 
     // Assinatura
-    '.assinatura { margin-top:50px; display:flex; justify-content:flex-end; }' +
+    '.assinatura { margin-top:80px; display:flex; justify-content:flex-end; }' +
     '.assin-box { text-align:center; width:200px; }' +
     '.assin-linha { border-top:1.5px solid #000; margin-bottom:4px; }' +
     '.assin-nome { font-size:10pt; font-weight:bold; }' +
@@ -1100,7 +1154,7 @@ function imprimirPrescricao(p, l, hoje, dataInt) {
     '<thead><tr>' +
     '<th style="border:1px solid #bbb;border-top:none;width:26px;padding:4px 3px;font-size:8.5pt;text-align:center;background:#f5f5f5">Nº</th>' +
     '<th style="border:1px solid #bbb;border-top:none;padding:4px 8px;font-size:8.5pt;text-align:left;background:#f5f5f5">Prescrição Médica</th>' +
-    '<th style="border:1px solid #bbb;border-top:none;width:210px;padding:4px 8px;font-size:8.5pt;text-align:center;background:#f5f5f5">Horários</th>' +
+    '<th style="border:1px solid #bbb;border-top:none;width:260px;padding:4px 8px;font-size:8.5pt;text-align:center;background:#f5f5f5">Horários</th>' +
     '</tr></thead>' +
     '<tbody>' + linhasHTML + '</tbody>' +
     '</table>' +
@@ -1180,7 +1234,7 @@ function imprimirEvolucaoObj(h, l, hoje, agora, dataInt) {
     '.vital-item { flex:1; text-align:center; border:1px solid #ccc; border-radius:3px; padding:5px 3px; }' +
     '.vital-label { font-size:6.5pt; color:#666; text-transform:uppercase; display:block; margin-bottom:2px; }' +
     '.vital-val { font-size:12pt; font-weight:bold; display:block; }' +
-    '.assinatura { margin-top:50px; display:flex; justify-content:flex-end; }' +
+    '.assinatura { margin-top:80px; display:flex; justify-content:flex-end; }' +
     '.assin-box { text-align:center; width:220px; }' +
     '.assin-linha { border-top:1.5px solid #000; margin-bottom:4px; }' +
     '.assin-nome { font-size:10pt; font-weight:bold; }' +
@@ -1324,7 +1378,7 @@ function imprimirEvolucao(p, l, hoje, agora, dataInt) {
     '.vital-item { flex:1; text-align:center; border:1px solid #ccc; border-radius:3px; padding:5px 3px; }' +
     '.vital-label { font-size:6.5pt; color:#666; text-transform:uppercase; display:block; margin-bottom:2px; }' +
     '.vital-val { font-size:12pt; font-weight:bold; display:block; }' +
-    '.assinatura { margin-top:50px; display:flex; justify-content:flex-end; }' +
+    '.assinatura { margin-top:80px; display:flex; justify-content:flex-end; }' +
     '.assin-box { text-align:center; width:220px; }' +
     '.assin-linha { border-top:1.5px solid #000; margin-bottom:4px; }' +
     '.assin-nome { font-size:10pt; font-weight:bold; }' +
@@ -1363,7 +1417,7 @@ function imprimirEvolucao(p, l, hoje, agora, dataInt) {
     '</div>' +
     '</div>' +
 
-    // ── BLOCO 2: Leito, setor, datas ──
+    // ── BLOCO 2: Leito, setor, datas + dias internado ──
     '<div style="display:flex;border:1px solid #bbb;border-top:none;">' +
     '<div style="flex:1;padding:5px 10px;border-right:1px solid #ddd">' +
     '<div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Leito</div>' +
@@ -1377,8 +1431,12 @@ function imprimirEvolucao(p, l, hoje, agora, dataInt) {
     '<div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Data de Internação</div>' +
     '<div style="font-size:9pt;font-weight:bold">' + dataInt + '</div>' +
     '</div>' +
+    '<div style="flex:0.8;padding:5px 10px;border-right:1px solid #ddd">' +
+    '<div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Dias Internado</div>' +
+    '<div style="font-size:10pt;font-weight:bold">' + (internacaoAtual.dias_internado != null ? internacaoAtual.dias_internado + 'd' : '—') + '</div>' +
+    '</div>' +
     '<div style="flex:1;padding:5px 10px">' +
-    '<div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Data / Hora da Evolução</div>' +
+    '<div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Data / Hora</div>' +
     '<div style="font-size:9pt;font-weight:bold">' + hoje + ' ' + agora + '</div>' +
     '</div>' +
     '</div>' +
@@ -1392,21 +1450,19 @@ function imprimirEvolucao(p, l, hoje, agora, dataInt) {
     // ── TÍTULO EVOLUÇÃO ──
     '<div style="text-align:center;font-size:9pt;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;border:1px solid #bbb;border-top:none;padding:4px;background:#f5f5f5;">Evolução Médica</div>' +
 
+    // ── SINAIS VITAIS (antes da evolução) ──
     '<div class="secao">' +
-    '<div class="secao-tit">Sinais Vitais</div>' +
+    '<div class="secao-tit">Sinais Vitais (SSVV)</div>' +
     '<div class="vitais-grid">' + vitaisHTML + '</div>' +
     '</div>' +
 
+    // ── EVOLUÇÃO CLÍNICA ──
     '<div class="secao">' +
     '<div class="secao-tit">1. Evolução Clínica</div>' +
-    '<div class="secao-body" style="min-height:130px">' + escHtml(texto).replace(/\n/g,'<br>') + '</div>' +
+    '<div class="secao-body" style="min-height:160px">' + escHtml(texto).replace(/\n/g,'<br>') + '</div>' +
     '</div>' +
 
-    '<div class="secao">' +
-    '<div class="secao-tit">Resultados de Exames</div>' +
-    '<div style="padding:6px 10px">' + examesHTML + '</div>' +
-    '</div>' +
-
+    // ── ASSINATURA ──
     '<div class="assinatura"><div class="assin-box">' +
     '<div class="assin-linha"></div>' +
     '<div class="assin-nome">' + escHtml(medico||'Médico Responsável') + '</div>' +
@@ -1415,6 +1471,25 @@ function imprimirEvolucao(p, l, hoje, agora, dataInt) {
     '</div></div>' +
 
     '<div class="rodape">SigmaPEP · Prontuário Eletrônico · UPA Zona Sul – Maringá/PR · ' + hoje + ' ' + agora + '</div>' +
+
+    // ── EXAMES EM PÁGINA SEPARADA ──
+    (exames.length > 0 ?
+    '<div style="page-break-before:always;padding-top:10mm;">' +
+    '<div style="text-align:center;padding:8px 0 6px;border-bottom:2px solid #000;">' +
+    '<p style="font-weight:bold;font-size:11pt;line-height:1.5">Prefeitura do Município de Maringá</p>' +
+    '<p style="font-size:10pt;line-height:1.5">Secretaria Municipal de Saúde</p>' +
+    '<p style="font-size:10pt;line-height:1.5">Unidade de Pronto Atendimento Zona Sul</p>' +
+    '</div>' +
+    '<div style="display:flex;border:1px solid #bbb;border-top:none;">' +
+    '<div style="flex:3;padding:5px 10px;border-right:1px solid #ddd"><div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Nome do Paciente</div><div style="font-size:10pt;font-weight:bold">' + escHtml(p.nome||'—') + '</div></div>' +
+    '<div style="flex:1;padding:5px 10px;border-right:1px solid #ddd"><div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Leito</div><div style="font-size:10pt;font-weight:bold">' + escHtml(l.codigo||'—') + '</div></div>' +
+    '<div style="flex:1;padding:5px 10px"><div style="font-size:7pt;text-transform:uppercase;color:#777;margin-bottom:2px">Data</div><div style="font-size:9pt;font-weight:bold">' + hoje + '</div></div>' +
+    '</div>' +
+    '<div style="text-align:center;font-size:9pt;font-weight:bold;text-transform:uppercase;border:1px solid #bbb;border-top:none;padding:4px;background:#f5f5f5;margin-bottom:0;">Resultados de Exames</div>' +
+    '<div style="border:1px solid #999;border-top:none;padding:6px 10px">' + examesHTML + '</div>' +
+    '</div>'
+    : '') +
+
     '</div><script>window.onload=function(){window.print()}<\/script></body></html>'
 
   abrirJanelaImpressao(html)
