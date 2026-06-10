@@ -516,6 +516,7 @@ async function carregarEvolucao() {
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
+                  <button class="btn text-[11px] py-1 px-2 btn-visualizar-hist" data-hist-id="${h.id}"><i class="ti ti-eye text-xs"></i> Ver</button>
                   <button class="btn text-[11px] py-1 px-2 btn-imprimir-hist" data-hist-id="${h.id}"><i class="ti ti-printer text-xs"></i> Imprimir</button>
                   <i class="ti ti-chevron-down text-gray-400 text-sm"></i>
                 </div>
@@ -581,6 +582,16 @@ async function carregarEvolucao() {
   document.getElementById('btn-copiar-evol').addEventListener('click', () => copiarEvolucao())
   document.getElementById('btn-imprimir-evol').addEventListener('click', () => imprimirDocumento('evolucao'))
   document.getElementById('btn-salvar-evol').addEventListener('click', salvarEvolucao)
+
+  // Botão visualizar histórico
+  document.querySelectorAll('.btn-visualizar-hist').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const h = (historico || []).find(x => String(x.id) === String(btn.dataset.histId))
+      if (!h) return
+      visualizarEvolucao(h)
+    })
+  })
 
   // Botões imprimir do histórico — usar data attributes em vez de closure
   document.querySelectorAll('.btn-imprimir-hist').forEach(btn => {
@@ -1175,9 +1186,94 @@ function imprimirPrescricao(p, l, hoje, dataInt) {
 
 
 
+function visualizarEvolucao(h) {
+  const dt = new Date(h.created_at)
+  const dataFmt = dt.toLocaleDateString('pt-BR')
+  const horaFmt = dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})
+  const vitais = h.dados_vitais || {}
+  const exames = h.exames || []
+
+  const vitaisTexto = [
+    vitais.pa ? `<span class="vital-badge">PA: <b>${vitais.pa}</b></span>` : '',
+    vitais.pulso ? `<span class="vital-badge">Pulso: <b>${vitais.pulso}bpm</b></span>` : '',
+    vitais.spo2 ? `<span class="vital-badge">SpO₂: <b>${vitais.spo2}%</b></span>` : '',
+    vitais.fr ? `<span class="vital-badge">FR: <b>${vitais.fr}</b></span>` : '',
+    vitais.glicemia ? `<span class="vital-badge">Glicemia: <b>${vitais.glicemia}</b></span>` : '',
+    vitais.temperatura ? `<span class="vital-badge">Temp: <b>${vitais.temperatura}°C</b></span>` : '',
+  ].filter(Boolean).join('')
+
+  // Remove modal anterior se existir
+  document.getElementById('modal-ver-evol')?.remove()
+
+  const modal = document.createElement('div')
+  modal.id = 'modal-ver-evol'
+  modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
+  modal.innerHTML = `
+    <div class="bg-white rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b border-gray-100 flex-shrink-0">
+        <div>
+          <h3 class="font-semibold text-gray-900">Evolução — ${dataFmt} às ${horaFmt}</h3>
+          <p class="text-xs text-gray-400 mt-0.5">${h.medico_responsavel || '—'}</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="modal-ver-imprimir" class="btn text-sm"><i class="ti ti-printer text-sm"></i> Imprimir</button>
+          <button id="modal-ver-fechar" class="text-gray-400 hover:text-gray-600 ml-1"><i class="ti ti-x text-lg"></i></button>
+        </div>
+      </div>
+      <div class="overflow-y-auto flex-1 p-4 flex flex-col gap-4">
+
+        ${h.diagnostico ? `
+        <div>
+          <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Diagnóstico</p>
+          <p class="text-sm text-gray-800">${h.diagnostico}</p>
+        </div>` : ''}
+
+        ${vitaisTexto ? `
+        <div>
+          <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Sinais Vitais</p>
+          <div class="flex flex-wrap gap-2">${vitaisTexto}</div>
+        </div>` : ''}
+
+        <div>
+          <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Evolução Clínica</p>
+          <p class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 rounded-lg p-3 border border-gray-100">${h.texto || '—'}</p>
+        </div>
+
+        ${exames.length ? `
+        <div>
+          <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Resultados de Exames</p>
+          <table class="data-table">
+            <thead><tr><th>Exame</th><th>Resultado</th><th>Data</th></tr></thead>
+            <tbody>
+              ${exames.map(e => `<tr>
+                <td class="font-medium">${e.exame}</td>
+                <td>${e.resultado}</td>
+                <td class="text-xs">${e.data_resultado ? new Date(e.data_resultado+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : ''}
+
+      </div>
+    </div>
+    <style>
+      .vital-badge { background:#f0f7ff; border:1px solid #c8dff0; border-radius:6px; padding:3px 10px; font-size:11px; color:#334; }
+    </style>
+  `
+
+  document.body.appendChild(modal)
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+  document.getElementById('modal-ver-fechar').addEventListener('click', () => modal.remove())
+  document.getElementById('modal-ver-imprimir').addEventListener('click', () => {
+    const dt2 = new Date(h.created_at)
+    const dataInt = internacaoAtual.data_internacao ? new Date(internacaoAtual.data_internacao+'T12:00:00').toLocaleDateString('pt-BR') : '—'
+    imprimirEvolucaoObj(h, internacaoAtual.leito || {}, dt2.toLocaleDateString('pt-BR'), dt2.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), dataInt)
+  })
+}
+
 function imprimirEvolucaoObj(h, l, hoje, agora, dataInt) {
   // Monta campos a partir do objeto histórico
-  const p = pacienteAtual || {}
+  const p = internacaoAtual.paciente || {}
   const vitais = h.dados_vitais || {}
   const exames = h.exames || []
   const medico = h.medico_responsavel || ''
