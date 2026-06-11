@@ -2,6 +2,7 @@
 import { supabase } from '../services/supabase.js'
 import { router } from '../router.js'
 import { calcularIdade } from '../services/pacientes.js'
+import { criarNotificacao } from '../services/notificacoes.js'
 
 export async function init(container, params = {}) {
   const leito_id = params.leito_id
@@ -274,6 +275,14 @@ function renderForm(container, leito, pacientes) {
         .update({ status: 'ocupado', updated_at: new Date().toISOString() })
         .eq('id', leito.id)
       if (e2) throw e2
+
+      // Cria notificação em tempo real
+      const nomePac = document.getElementById('pac-sel-nome')?.textContent || 'Paciente'
+      await criarNotificacao({
+        tipo: 'internacao',
+        titulo: `Novo paciente internado`,
+        mensagem: `${nomePac} internado no leito ${leito.codigo} — ${leito.setor}. HD: ${diagnostico}`,
+      })
 
       router.navigate('leitos')
     } catch (err) {
