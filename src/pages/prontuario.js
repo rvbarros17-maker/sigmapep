@@ -117,7 +117,7 @@ async function carregarPrescricao() {
   tc.innerHTML = `
     <div class="flex flex-col gap-3 pb-4">
       <div class="card">
-        <div class="card-title">Diagnóstico (resumo)</div>
+        <div class="card-title">Diagnóstico</div>
         <textarea id="p-diagnostico" class="field text-[12.5px]" rows="2" placeholder="Diagnóstico principal...">${presc?.diagnostico || internacaoAtual.diagnostico || ''}</textarea>
       </div>
       <div class="card">
@@ -136,7 +136,7 @@ async function carregarPrescricao() {
         <div class="overflow-x-auto">
           <table class="data-table">
             <thead><tr>
-              <th>Medicamento</th><th>Dose</th><th>Via</th><th>Frequência</th><th>Observação</th><th>Início</th><th>Dias</th><th>Ações</th>
+              <th>Medicamento</th><th>Dose</th><th>Via</th><th>Frequência</th><th>Observação</th><th>Início</th><th>Dias</th><th class="text-center">Susp.</th><th>Ações</th>
             </tr></thead>
             <tbody id="meds-tbody">
               ${meds.length ? meds.map(m => rowMed(m)).join('') : `
@@ -296,8 +296,9 @@ function rowMed(m) {
   const inicio = m.data_inicio ? new Date(m.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
   const diasTrat = m.dias && m.data_inicio
     ? `D${Math.floor((Date.now()-new Date(m.data_inicio))/86400000)+1}/${m.dias}` : '—'
+  const suspenso = m.suspenso || false
   return `
-    <tr data-med-id="${m.id}">
+    <tr data-med-id="${m.id}" class="${suspenso ? 'opacity-40 line-through' : ''}">
       <td class="font-medium">${m.medicamento}</td>
       <td>${m.dose}</td>
       <td>${m.via}</td>
@@ -305,10 +306,30 @@ function rowMed(m) {
       <td class="text-[11px] text-amber-700 italic">${m.observacao||'—'}</td>
       <td class="text-[11px]">${inicio}</td>
       <td>${m.dias||'—'}</td>
+      <td class="text-center">
+        <label class="flex items-center justify-center gap-1 cursor-pointer" title="Suspender medicação">
+          <input type="checkbox" class="chk-suspender w-3.5 h-3.5 accent-amber-500" ${suspenso ? 'checked' : ''}>
+          <span class="text-[10px] text-gray-400">Susp.</span>
+        </label>
+      </td>
       <td><button class="btn-del-med text-red-400 hover:text-red-600 p-1"><i class="ti ti-trash text-xs"></i></button></td>
     </tr>`
 }
-function bindDelMed()   { document.querySelectorAll('.btn-del-med').forEach(b => { b.onclick = () => b.closest('tr').remove() }) }
+function bindDelMed() {
+  document.querySelectorAll('.btn-del-med').forEach(b => { b.onclick = () => b.closest('tr').remove() })
+  document.querySelectorAll('.chk-suspender').forEach(chk => {
+    chk.onchange = () => {
+      const tr = chk.closest('tr')
+      if (chk.checked) {
+        tr.classList.add('opacity-40', 'line-through')
+        tr.dataset.suspenso = 'true'
+      } else {
+        tr.classList.remove('opacity-40', 'line-through')
+        tr.dataset.suspenso = 'false'
+      }
+    }
+  })
+}
 function bindDelSolic() { document.querySelectorAll('.btn-del-solic').forEach(b => { b.onclick = () => b.closest('[data-solic-id]').remove() }) }
 
 async function salvarPrescricao() {
@@ -323,6 +344,7 @@ async function salvarPrescricao() {
     const obsVal = tds[4].textContent.replace(/[–—]/g,'').trim()
     const diasVal = tds[6].textContent.replace(/[–—]/g,'').trim()
     const inicioRaw = tds[5].textContent.replace(/[–—]/g,'').trim()
+    const suspenso = tr.dataset.suspenso === 'true' || tds[7]?.querySelector('input')?.checked || false
     // Converte data exibida (dd/mm/yyyy) de volta para ISO (yyyy-mm-dd)
     let data_inicio = null
     if (inicioRaw) {
@@ -337,6 +359,7 @@ async function salvarPrescricao() {
       observacao:  obsVal || null,
       data_inicio: data_inicio || null,
       dias:        diasVal ? parseInt(diasVal) : null,
+      suspenso:    suspenso,
     })
   })
   const solicitacoes = []
@@ -397,7 +420,7 @@ async function carregarEvolucao() {
       <!-- Diagnóstico sincronizado -->
       <div class="card">
         <div class="flex items-center justify-between mb-2">
-          <div class="card-title mb-0">Diagnóstico (resumo)</div>
+          <div class="card-title mb-0">Diagnóstico</div>
           <span class="text-[10.5px] text-primary-500 flex items-center gap-1"><i class="ti ti-refresh text-xs"></i> Sincronizado com a prescrição</span>
         </div>
         <textarea id="e-diagnostico" class="field text-[12.5px]" rows="2" placeholder="Diagnóstico principal...">${diagAtual}</textarea>
@@ -960,6 +983,7 @@ function copiarPrescricao() {
 
   let num = 2
   document.querySelectorAll('#meds-tbody tr[data-med-id]').forEach(tr => {
+    if (tr.dataset.suspenso === 'true' || tr.querySelector('.chk-suspender')?.checked) return
     const tds = tr.querySelectorAll('td')
     const nome = tds[0]?.textContent?.trim() || ''
     const dose = tds[1]?.textContent?.trim() || ''
@@ -1021,14 +1045,8 @@ function imprimirPrescricao(p, l, hoje, dataInt) {
   if (dieta) itens.push(dieta.toUpperCase())
 
   document.querySelectorAll('#meds-tbody tr[data-med-id]').forEach(tr => {
+    if (tr.dataset.suspenso === 'true' || tr.querySelector('.chk-suspender')?.checked) return
     const tds  = tr.querySelectorAll('td')
-    const nome = tds[0]?.textContent?.trim() || ''
-    const dose = tds[1]?.textContent?.trim() || ''
-    const via  = tds[2]?.textContent?.trim() || ''
-    const freq = tds[3]?.textContent?.trim() || ''
-    const obs  = tds[4]?.textContent?.trim()
-    const diasVal  = tds[6]?.textContent.replace(/[–—]/g,'').trim()
-    const inicioTd = tds[5]?.textContent.replace(/[–—]/g,'').trim()
     // Calcula Dx/y dinamicamente
     let diaLabel = ''
     if (diasVal && inicioTd) {
