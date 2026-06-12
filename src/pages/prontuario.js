@@ -986,9 +986,16 @@ function copiarPrescricao() {
   let num = 2
   document.querySelectorAll('#meds-tbody tr[data-med-id]').forEach(tr => {
     if (tr.dataset.suspenso === 'true' || tr.querySelector('.chk-suspender')?.checked) return
-    const tds = tr.querySelectorAll('td')
+    const tds    = tr.querySelectorAll('td')
+    const nome   = tds[0]?.textContent?.trim() || ''
+    const dose   = tds[1]?.textContent?.trim() || ''
+    const via    = tds[2]?.textContent?.trim() || ''
+    const freq   = tds[3]?.textContent?.trim() || ''
+    const obs    = (tds[4]?.textContent||'').replace(/[–—]/g,'').trim()
+    const inicioTd = tds[5]?.textContent.replace(/[–—]/g,'').trim()
+    const diasTd   = tds[6]?.textContent.replace(/D\d+\//,'').replace(/[–—]/g,'').trim()
     let diaLabel = ''
-    if (diasTd && inicioTd) {
+    if (diasTd && inicioTd && inicioTd !== '—') {
       const [d,m,a] = inicioTd.split('/')
       if (d && m && a) {
         const dataInicio = new Date(`${a}-${m.padStart(2,'0')}-${d.padStart(2,'0')}T12:00:00`)
@@ -1041,17 +1048,25 @@ function imprimirPrescricao(p, l, hoje, dataInt) {
 
   document.querySelectorAll('#meds-tbody tr[data-med-id]').forEach(tr => {
     if (tr.dataset.suspenso === 'true' || tr.querySelector('.chk-suspender')?.checked) return
-    const tds  = tr.querySelectorAll('td')
+    const tds    = tr.querySelectorAll('td')
+    // Colunas: 0=med,1=dose,2=via,3=freq,4=obs,5=inicio,6=dias,7=susp,8=acoes
+    const nome   = tds[0]?.textContent?.trim() || ''
+    const dose   = tds[1]?.textContent?.trim() || ''
+    const via    = tds[2]?.textContent?.trim() || ''
+    const freq   = tds[3]?.textContent?.trim() || ''
+    const obs    = tds[4]?.textContent?.trim()
+    const inicioTd = tds[5]?.textContent.replace(/[–—]/g,'').trim()
+    const diasVal  = tds[6]?.textContent.replace(/D\d+\//,'').replace(/[–—]/g,'').trim()
     // Calcula Dx/y dinamicamente
     let diaLabel = ''
-    if (diasVal && inicioTd) {
+    if (diasVal && inicioTd && inicioTd !== '—') {
       const [d,m,a] = inicioTd.split('/')
       if (d && m && a) {
         const dataInicio = new Date(`${a}-${m.padStart(2,'0')}-${d.padStart(2,'0')}T12:00:00`)
         const diaAtual = Math.floor((Date.now() - dataInicio) / 86400000) + 1
         diaLabel = `D${diaAtual}/${diasVal}`
       }
-    } else if (diasVal) {
+    } else if (diasVal && diasVal !== '—') {
       diaLabel = `D1/${diasVal}`
     }
     const partes = [nome, dose, '–', via, freq]
