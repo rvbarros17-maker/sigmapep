@@ -117,7 +117,7 @@ async function carregarPrescricao() {
   tc.innerHTML = `
     <div class="flex flex-col gap-3 pb-4">
       <div class="card">
-        <div class="card-title">Diagnóstico (resumo)</div>
+        <div class="card-title">Diagnóstico</div>
         <textarea id="p-diagnostico" class="field text-[12.5px]" rows="2" placeholder="Diagnóstico principal...">${presc?.diagnostico || internacaoAtual.diagnostico || ''}</textarea>
       </div>
       <div class="card">
@@ -422,7 +422,7 @@ async function carregarEvolucao() {
       <!-- Diagnóstico sincronizado -->
       <div class="card">
         <div class="flex items-center justify-between mb-2">
-          <div class="card-title mb-0">Diagnóstico (resumo)</div>
+          <div class="card-title mb-0">Diagnóstico</div>
           <span class="text-[10.5px] text-primary-500 flex items-center gap-1"><i class="ti ti-refresh text-xs"></i> Sincronizado com a prescrição</span>
         </div>
         <textarea id="e-diagnostico" class="field text-[12.5px]" rows="2" placeholder="Diagnóstico principal...">${diagAtual}</textarea>
